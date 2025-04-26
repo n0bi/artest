@@ -1,0 +1,125 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AR Scene with AR.js and Scale Controls</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100vw; height: 100vh; display: block; }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        button:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <!-- AR.js with A-Frame integration -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <!-- Scale controls -->
+    <div id="controls">
+        <button onclick="changeScale(0.1)">Increase Size</button>
+        <button onclick="changeScale(-0.1)">Decrease Size</button>
+    </div>
+
+    <!-- A-Frame scene -->
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; patternRatio: 0.5;"
+        renderer="logarithmicDepthBuffer: true;"
+    >
+        <!-- Assets for preloading the OBJ model -->
+        <a-assets>
+            <a-asset-item id="dragon-model" src="https://raw.githubusercontent.com/n0bi/artest/main/dragon.obj"></a-asset-item>
+        </a-assets>
+
+        <!-- Pattern marker for custom manu.patt -->
+        <a-marker
+            type="pattern"
+            url="https://raw.githubusercontent.com/n0bi/artest/main/manu.patt"
+        >
+            <!-- 3D model entity -->
+            <a-entity
+                id="dragon-entity"
+                obj-model="obj: #dragon-model;"
+                scale="0.5 0.5 0.5"
+                position="0 0 0"
+                rotation="0 0 0"
+            ></a-entity>
+        </a-marker>
+
+        <!-- Camera entity -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- JavaScript for scale controls -->
+    <script>
+        let currentScale = 0.5; // Initial scale
+
+        function changeScale(delta) {
+            const dragonEntity = document.getElementById('dragon-entity');
+            currentScale = Math.max(0.1, currentScale + delta); // Prevent scale from going below 0.1
+            dragonEntity.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+        }
+    </script>
+</body>
+</html>
