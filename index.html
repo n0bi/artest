@@ -141,7 +141,7 @@
             <a-entity
                 id="milka-entity"
                 gltf-model="#milka-model"
-                scale="37.5 37.5 37.5"
+                scale="0.5 0.5 0.5"
                 position="0 0 0"
                 rotation="0 0 0"
             ></a-entity>
@@ -153,7 +153,7 @@
 
     <!-- JavaScript for scale controls -->
     <script>
-        let currentScale = 37.5; // Initial scale (75x original scale of 0.5)
+        let currentScale = 0.5; // Initial scale (original scale)
 
         function changeScale(delta) {
             const milkaEntity = document.getElementById('milka-entity');
